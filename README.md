@@ -1,230 +1,173 @@
-# HackerRank Orchestrate - October 2026
+# Ghost Data Still Exists
+### HackerRank Orchestrate — October 2026 Hackathon
 
-## Ghost Data Still Exists
+I built this project as part of the HackerRank Orchestrate hackathon, where the challenge was to investigate a problem that can easily go unnoticed: **a system can say someone's data has been deleted even when copies of that data still exist.**
 
-Build an AI agent that audits whether a user's personal data was actually deleted.
+A deletion request might be marked complete, but the data could remain in a database replica, an activity log, an export, an attachment, or an old backup. It can even reappear when systems synchronize or restore data.
 
-A deletion workflow may report **Complete** while data still exists in databases, logs, support attachments, exports, search indexes, archives, or backups. Sync and restore processes may also bring deleted data back.
+I wanted to build a tool that looks beyond the reported status and checks the available evidence before deciding whether a deletion has actually been completed.
 
-For each request, the agent must first determine whether deletion was actually requested. It then returns `COMPLETE`, `INCOMPLETE`, or `NOT_APPLICABLE`, reports any remaining data or recreation risk, and produces the ordered remediation and verification steps required to finish an authorized deletion safely.
+## What I built
 
-Read [`problem_statement.md`](./problem_statement.md) for the complete challenge contract.
+Ghost Data Still Exists is a Python-based deletion-audit agent. It examines deletion requests alongside identity records, system activity, deletion policies, and supporting evidence to determine what happened to a user's data.
 
----
+For every request, it produces one of three outcomes:
 
-## Quick Start
+- **COMPLETE** — the available evidence supports that the required deletion and verification steps have been completed.
+- **INCOMPLETE** — data remains, a required action is missing, or further remediation and verification are needed.
+- **NOT_APPLICABLE** — the request does not actually ask for data deletion.
 
-Clone the repository and move into the project directory:
+The output also includes an ordered list of findings, recommended remediation actions, and verification steps, with references to supporting evidence wherever required.
 
-```bash
-git clone https://github.com/interviewstreet/hackerrank-orchestrate-october26.git
-cd hackerrank-orchestrate-october26
-```
+## How I approached the problem
 
-Start your AI coding tool from the **repository root** so it automatically reads [`AGENTS.md`](./AGENTS.md) and logs your session turns to `log.txt` in the root directory.
+Rather than treating a reported deletion status as the final answer, I built the solution around the evidence available in the dataset.
 
-Build your solution in `code/main.py`, or use another language and document its setup and run command clearly in your README.
+### 1. Checking whether deletion was actually requested
 
-Your solution must:
+The first step is to classify the request itself. The classifier uses keyword, negation, and intent rules to distinguish deletion requests from other actions, such as accessing an account, correcting information, or withdrawing consent.
 
-- Read the input files from `dataset/`
-- Generate one prediction row for every request in `dataset/deletion_requests.csv`
-- Write the final predictions to `output.csv` in the repository root
+It includes multilingual rules for English, Spanish, Portuguese, French, Italian, German, Japanese, and Korean.
 
-Run the starter Python entry point with:
+### 2. Looking for evidence across systems
 
-```bash
-python3 code/main.py
-```
+The agent processes evidence from different formats, including SQL snapshots, JSON files, logs, CSV files, PDFs, text files, and images where OCR is available.
 
-The blank template at `dataset/output.csv` is provided as a reference. Your final generated file for submission must be the root-level `output.csv`.
+Each extracted fact is associated with information such as its timestamp, system, resource, state, and evidence reference. This lets the solution investigate the resource's state instead of relying only on a workflow's reported result.
 
+### 3. Resolving user identities
 
-## Dataset
+A user's identity may change over time, so the solution checks both current identity records and historical audit records. It uses exact identifier matching to associate evidence with the correct subject and avoid confusing similar identities.
 
-All participant-facing files are in `dataset/`:
+### 4. Applying deletion policies
 
-| File | Contents |
-| --- | --- |
-| `deletion_requests.csv` | 518 requests |
-| `sample_deletion_requests.csv` | 32 sample requests |
-| `sample_output.csv` | Correct sample answers |
-| `user_identities.csv` | Current user identities |
-| `user_audit_log.csv` | Historical identity changes |
-| `system_activity.csv` | Activity across services and data processes |
-| `deletion_rules.csv` | Required treatment for each data category |
-| `evidence_files.csv` | Manifest of supplied evidence files |
-| `output.csv` | Blank output template |
+Different types of data require different treatments. Depending on the applicable rule, the agent accounts for deletion, redaction, anonymization, or retention.
 
-Evidence is stored under `dataset/evidence/` and may include PDFs, images, logs, JSON, plain text, or SQL snapshot exports. SQL captures may contain a primary database, regional replicas, a reporting replica, or a failover replica so replication drift can be investigated directly. The `.sql` files are readable as text and executable with SQLite.
+This matters because not every record should be physically deleted. Some records may need to be retained under an applicable policy, and their required state still needs to be checked.
 
-Only `deletion_requests.csv` requires answers. The other files provide evidence and context.
+### 5. Generating actionable results
 
----
+Once the evidence has been processed, the solution builds an ordered sequence of findings, remediation actions, and verification checks.
 
-## Output
+The final result is written to `output.csv`, with one prediction for each of the 518 deletion requests in the supplied dataset.
 
-Create `output.csv` with these columns in this exact order:
+## Technical implementation
 
-```text
-case_id,deletion_status,steps_json
-```
+I used Python to build a deterministic processing pipeline, with separate modules for classification, evidence extraction, identity resolution, policy handling, and step generation.
 
-Produce exactly one row per request. `deletion_status` is `COMPLETE`, `INCOMPLETE`, or `NOT_APPLICABLE`. `steps_json` is an ordered JSON array containing findings, remediation actions, and verification checks. Use an empty array (`[]`) for `NOT_APPLICABLE`. Evidence references may be a `file_id`, `activity_id`, or `audit_id`. Determine the resource state at `audit_at` from the available evidence; reported workflow statuses and operation results are claims. Use `dataset/sample_output.csv` as the format reference.
+The main implementation decisions were:
 
-The final file must contain 518 data rows sorted by `case_id` (plus the header row). The grader parses `steps_json` as JSON, so object-key order and whitespace do not matter; array order does. Order findings, remediation, and verification in that phase order. Within a phase, follow the operation order in the problem statement, then sort by `system_id` and `resource_id`.
+- **Python** for the core processing pipeline.
+- **Rule-based classification** for deletion intent and negation.
+- **Structured evidence extraction** to work across different file formats.
+- **Identity and audit-log matching** to account for historical identifiers.
+- **Policy-driven processing** to determine the required treatment of each resource.
+- **CSV and JSON output** to produce results in the format expected by the challenge.
+- **Custom evaluation cases** to test behavior beyond the supplied sample examples.
 
----
+The solution does not require an API key for its standard execution path. Optional LLM arbitration is available for ambiguous request text, but the shipped dataset does not contain cases that require it.
 
-## Evaluation
+## Running the project
 
-`output.csv` will be compared with hidden canonical answers. Scoring considers:
+### Requirements
 
-- deletion assessment accuracy;
-- current and historical identity resolution;
-- discovery of remaining data and recreation risks;
-- correct policy application and evidence references; and
-- completeness and ordering of remediation and verification steps.
+- Python 3.10 or newer
+- Dependencies listed in `requirements.txt`
+- Optional: Tesseract OCR for extracting text from image evidence
 
-Your `code.zip` must include:
-
-```text
-code/evaluation/evaluation_report.md
-code/evaluation/usage_report.md
-```
-
-- `evaluation_report.md` must cover case, row, field, and sequence accuracy, at least three additional evaluation cases created by you, failures found, and improvements made.
-- `usage_report.md` must cover the final full-dataset run, including model providers and names, model calls, input and output tokens, total and average tokens per request, and estimated total and per-request cost. Include per-model and overall totals when using multiple models.
-
-**Important:** Place `evaluation_report.md` and `usage_report.md` inside `code/evaluation/` (matching `code/evaluation/main.py` in this starter layout), write your complete evaluation metrics, custom evaluation test cases, and token/cost breakdowns directly inside those Markdown files, and keep prompts in source code or Markdown files. Automated code evaluation ignores raw data files (`.csv`, `.tsv`, `.json`, `.jsonl`, `.sql`, `.log`), so content stored only in those formats will not be visible to the code judge or AI interviewer.
-
----
-
-## Chat Transcript
-
-This repository includes [`AGENTS.md`](./AGENTS.md), which instructs compatible AI coding tools to append conversation summaries to `log.txt` in the repository root:
-
-| Platform | Path |
-| --- | --- |
-| macOS / Linux | `<repo root>/log.txt` |
-| Windows | `<repo root>\log.txt` |
-
-- Always launch your AI coding agent from the repository root (or explicitly ask it to read `./AGENTS.md` first) so every turn is logged to `log.txt` with the required `User Prompt`, `Agent Response Summary`, `Actions`, and `Context` sections.
-- Upload `log.txt` directly as your `chat_transcript` submission on HackerRank.
-- Do not include API keys, tokens, credentials, or secrets in prompts, code, configuration, or `log.txt`.
-
----
-
-## Packaging `code.zip` and Submission
-
-| Item | Description |
-| --- | --- |
-| `code.zip` | Runnable solution, prompts, configuration, `README.md`, and `evaluation/` reports |
-| `output.csv` | One answer row for each of the 518 requests in `dataset/deletion_requests.csv` |
-| `chat_transcript` | The root `log.txt` file generated by your coding agent |
-| AI interview | Live explanation of your architecture, approach, and evaluation |
-
-You may use any programming language, model, framework, or retrieval approach. Include clear setup and execution instructions in `README.md` inside `code.zip`.
-
-To package `code.zip` from the repository root without bundling the dataset:
-
-**macOS / Linux:**
+### Setup
 
 ```bash
-zip -r code.zip README.md code -x "*/__pycache__/*" "*/.venv/*" "*/venv/*" "*/node_modules/*" "*/.git/*" "*/.DS_Store"
-```
-
-**Windows (PowerShell):**
-
-```powershell
-Compress-Archive -Path README.md, code -DestinationPath code.zip -Force
-```
-
-When packaging `code.zip`:
-
-- Keep your evaluation reports in `code/evaluation/` so they are bundled automatically with `code` (or add `evaluation` to the archive command above if you placed them in a top-level `evaluation/` directory).
-- Do **not** include `dataset/`, virtual environments (`.venv`, `venv`, `node_modules`), or build caches (`__pycache__`). On Windows, keep `.venv` at the repository root (outside `code/`) and remove any `code/__pycache__` folders before running `Compress-Archive`.
-- Do **not** include nested archives (`.zip`, `.tar`, `.gz`, `.tgz`, `.7z`, `.rar`) inside `code.zip` — submissions containing nested archive files will be rejected.
-
-Before submitting, confirm that:
-
-- `output.csv` has the exact header `case_id,deletion_status,steps_json` and contains all 518 data rows sorted by `case_id`;
-- every `steps_json` value is a valid JSON array with consecutive step numbers starting at `1`;
-- findings cite valid evidence IDs, and `COMPLETE` verification steps cite evidence proving the current state;
-- proposed remediation and future verification steps use an empty `evidence_id` (`""`);
-- `code.zip` includes your runnable code, `README.md`, `code/evaluation/evaluation_report.md`, and `code/evaluation/usage_report.md`;
-- `log.txt` follows the `AGENTS.md` turn format and is uploaded to the `chat_transcript` slot; and
-- no API keys, credentials, real personal data, or sensitive configuration values are included.
-
----
-
-# Solution README — deletion-audit agent (`code/`)
-
-## Setup
-
-```bash
-python3 -m venv .venv && source .venv/bin/activate   # optional
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Python 3.10+ is required. The optional system tool `tesseract` is only needed if
-PNG evidence should be OCR'd; SQL, JSON, log and CSV evidence parse natively.
+On Windows, activate the environment with:
 
-## Run
-
-```bash
-python3 code/main.py --full          # all 518 cases -> root output.csv (~16 s)
-python3 code/main.py --sample        # regenerate + score the 32 public samples
-python3 code/main.py --sample --mismatches 99   # per-case diff + evidence trace
-python3 code/evaluation/main.py      # eval harness -> code/evaluation/evaluation_report.md
-python3 code/evaluation/custom_cases.py   # 3 participant-created self-checks
+```powershell
+.venv\Scripts\Activate.ps1
 ```
 
-Everything is deterministic. No API key is required. Optionally set `LLM_*`
-variables from `.env.example` to enable LLM arbitration for ambiguous
-`request_text` values (none occur in the shipped dataset); results are cached in
-`code/evaluation/llm_cache.json`.
+### Run the solution
 
-## Design decisions
+Generate predictions for the full dataset:
 
-1. **Gate first** — `code/classify.py` classifies `request_text` with
-   multilingual keyword/negation rules (EN/ES/PT/FR/IT/DE/JA/KO). Negations and
-   withdrawals dominate; access/correction/login/marketing signals apply only
-   when no deletion intent exists. Every decision is logged with a reason to
-   `code/evaluation/classification_log.csv`. `NOT_APPLICABLE` cases emit `[]`.
-2. **Evidence over claims** — `system_activity.csv` rows are treated as claims.
-   Resource states come from parsed evidence facts (SQL snapshots, JSON bundles,
-   `key=value` logs, structured-JSON logs, handover text, PDF text, OCR text),
-   each carrying `(file_id, ts, system, resource, category, state, refs)`.
-3. **Trace correlation** — `_started` rows carry `lookup_key`/refs; refs are
-   merged into the rows of the same `trace_id`, so completed rows inherit the
-   subject association.
-4. **Identity resolution** — exact match over current + historical identifiers
-   from `user_identities.csv` and `user_audit_log.csv` (emails, hashes, phones).
-   Near-duplicate decoy identities are rejected by exact-identifier matching.
-5. **Rules engine** — `deletion_rules.csv` is applied literally per category
-   (DELETE / REDACT / ANONYMIZE / RETAIN / tombstone-REDACT). Retained audit and
-   legal records always get an uncited `VERIFY_RECORD_PRESENT`.
-6. **Attribution chain for account merge targets** — (1) subject evidence fact,
-   (2) same-line co-occurrence of a subject identifier and an `account_NNN` rid
-   in an eligible file, (3) fallback to worker deletion rows nearest
-   `reported_at`. Rids that appear in no subject-linkable place cannot be
-   derived and are documented as a limitation.
-7. **Step planner** — findings cite the freshest eligible fact's `file_id`;
-   INCOMPLETE remediation/verification steps always use `""` evidence per the
-   spec; COMPLETE cases emit evidence-cited verifications, ordered as in §6.4.
+```bash
+python3 code/main.py --full
+```
 
-## Known limitations
+Run the public sample cases:
 
-- **Hidden rid mappings**: a few sample cases (`case_04/09/18/20/21/23/25/31/32`
-  style) reference account/analytics rid↔user pairs that no participant-visible
-  evidence links (verified by grep over the whole corpus, plus cross-table
-  joins on `user_id`, `email_hash`, `phone`). Those fields cannot be derived
-  without organizer-only truth; the pipeline falls back to nearest-activity
-  attribution for accounts and omits derivable-only-other resources.
-- **OCR**: PNG evidence is read via the `tesseract` binary and cached on disk
-  keyed by SHA-256 of the file (`code/evaluation/extract_cache/`). OCR is
-  approximate; most subject identifiers are corroborated by non-image sources.
-- **Order-score ceiling**: 17/32 sample cases match exactly. All residual
-  sample gaps are explained by the hidden-rid limitation above.
+```bash
+python3 code/main.py --sample
+```
 
+Inspect sample mismatches:
+
+```bash
+python3 code/main.py --sample --mismatches 99
+```
+
+Run the evaluation harness:
+
+```bash
+python3 code/evaluation/main.py
+```
+
+Run the additional custom test cases:
+
+```bash
+python3 code/evaluation/custom_cases.py
+```
+
+The full run generates `output.csv` in the repository root.
+
+## Evaluation and what I learned
+
+I evaluated the solution against the public sample output and added custom cases to check its behavior.
+
+The implementation matches 17 of the 32 supplied sample cases exactly. The remaining discrepancies exposed an important limitation: some resource identifiers in the sample cases cannot be reliably mapped to users using the participant-visible evidence alone.
+
+I documented this as a limitation rather than treating an inferred identity mapping as established fact.
+
+Working on this problem also reinforced a few lessons for me:
+
+- A successful operation is not the same as a verified outcome.
+- Data spread across multiple systems makes identity resolution and evidence correlation difficult.
+- Correctly applying a policy is just as important as identifying the current state of a resource.
+- Evaluation needs to look at the sequence and quality of actions, not just the final classification.
+- A system should distinguish between what the evidence establishes and what still needs investigation.
+
+The evaluation details, additional test cases, and implementation limitations are documented in `code/evaluation/`.
+
+## Current limitations
+
+The main limitation is incomplete identity-to-resource attribution in some cases where the supplied evidence does not establish a reliable link. OCR can also introduce errors when extracting text from images.
+
+These limitations affect how confidently certain resources can be attributed to a subject. Improving evidence correlation and developing stronger validation around ambiguous identity mappings would be important next steps.
+
+## Repository structure
+
+```text
+.
+├── code/
+│   ├── main.py
+│   ├── classify.py
+│   └── evaluation/
+│       ├── main.py
+│       ├── custom_cases.py
+│       ├── evaluation_report.md
+│       └── usage_report.md
+├── dataset/
+├── problem_statement.md
+└── README.md
+```
+
+The repository also contains the supporting implementation modules and configuration files required to run the solution.
+
+## Final thoughts
+
+This was a useful engineering challenge because it required more than classifying a request or checking a single database record. I had to think about how evidence from different systems fits together, how identity changes affect attribution, and how a result can be verified rather than simply assumed.
+
+**The central idea behind Ghost Data Still Exists is simple: don't trust the deletion status alone — investigate the evidence.**
