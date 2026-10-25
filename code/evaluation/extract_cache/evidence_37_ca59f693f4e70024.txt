@@ -1,0 +1,32 @@
+<> Northstar Shop Sentinel © Search events, users, IP addresses or references... (-]
+Northstar Shop | Sentinel / Account events
+L) ovenvew Account events QEEEED Fiter || Expot | Actons
+D Threats Subject filter: user_03 - 18-26 Aug 2026 UTC
+Events (6) Timeline tegrity
+[J Account events
+O Auditiogs . Catogores Inegrityfares Partiion
+6 5 [} 2026-03
+[ Detections = = = =
+[J investigations Events (6) Updated moments ago - 6 records audit_record_003 - Raw event
+[J Reports Time (UTC) Event Category Subject Actor Integrity [ QD TR
+() 25 Aug 0403 Account closure recorded Account lfecycle user_03 Automated workflow Valid audit_record_003 aubject —
+(2] 25 Aug 0321 Session revoked Frmp—— user_03 Security system Valid audit_record_002 actor ‘automated account workfiow
+recorded st 2026-08-25T04:03:00Z
+() 28 Aug 1618 [ ——) Authentication user_03 User (self) Valid audit_record_001
+fngerprint sfoc..31ad
+(@ 22mug 27 Email change confirmed Profile update user_03 User (self) Valid audit_record_006
+signature Vaiid
+(] 20 Aug 09:42 Login from new devica Authentication user_03 User (self) Valid audit_record_005 journal 2026-03
+18 Aug 14:05. Password changed pT—— user_03 User (self) Valid audit_record_004 »
+Activity
+25 a0
+e
+25 a0
+e
+20 hu
+e e
+2am
+o B
+e
+s e
+bild 2026104

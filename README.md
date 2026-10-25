@@ -155,3 +155,76 @@ Before submitting, confirm that:
 - `code.zip` includes your runnable code, `README.md`, `code/evaluation/evaluation_report.md`, and `code/evaluation/usage_report.md`;
 - `log.txt` follows the `AGENTS.md` turn format and is uploaded to the `chat_transcript` slot; and
 - no API keys, credentials, real personal data, or sensitive configuration values are included.
+
+---
+
+# Solution README — deletion-audit agent (`code/`)
+
+## Setup
+
+```bash
+python3 -m venv .venv && source .venv/bin/activate   # optional
+pip install -r requirements.txt
+```
+
+Python 3.10+ is required. The optional system tool `tesseract` is only needed if
+PNG evidence should be OCR'd; SQL, JSON, log and CSV evidence parse natively.
+
+## Run
+
+```bash
+python3 code/main.py --full          # all 518 cases -> root output.csv (~16 s)
+python3 code/main.py --sample        # regenerate + score the 32 public samples
+python3 code/main.py --sample --mismatches 99   # per-case diff + evidence trace
+python3 code/evaluation/main.py      # eval harness -> code/evaluation/evaluation_report.md
+python3 code/evaluation/custom_cases.py   # 3 participant-created self-checks
+```
+
+Everything is deterministic. No API key is required. Optionally set `LLM_*`
+variables from `.env.example` to enable LLM arbitration for ambiguous
+`request_text` values (none occur in the shipped dataset); results are cached in
+`code/evaluation/llm_cache.json`.
+
+## Design decisions
+
+1. **Gate first** — `code/classify.py` classifies `request_text` with
+   multilingual keyword/negation rules (EN/ES/PT/FR/IT/DE/JA/KO). Negations and
+   withdrawals dominate; access/correction/login/marketing signals apply only
+   when no deletion intent exists. Every decision is logged with a reason to
+   `code/evaluation/classification_log.csv`. `NOT_APPLICABLE` cases emit `[]`.
+2. **Evidence over claims** — `system_activity.csv` rows are treated as claims.
+   Resource states come from parsed evidence facts (SQL snapshots, JSON bundles,
+   `key=value` logs, structured-JSON logs, handover text, PDF text, OCR text),
+   each carrying `(file_id, ts, system, resource, category, state, refs)`.
+3. **Trace correlation** — `_started` rows carry `lookup_key`/refs; refs are
+   merged into the rows of the same `trace_id`, so completed rows inherit the
+   subject association.
+4. **Identity resolution** — exact match over current + historical identifiers
+   from `user_identities.csv` and `user_audit_log.csv` (emails, hashes, phones).
+   Near-duplicate decoy identities are rejected by exact-identifier matching.
+5. **Rules engine** — `deletion_rules.csv` is applied literally per category
+   (DELETE / REDACT / ANONYMIZE / RETAIN / tombstone-REDACT). Retained audit and
+   legal records always get an uncited `VERIFY_RECORD_PRESENT`.
+6. **Attribution chain for account merge targets** — (1) subject evidence fact,
+   (2) same-line co-occurrence of a subject identifier and an `account_NNN` rid
+   in an eligible file, (3) fallback to worker deletion rows nearest
+   `reported_at`. Rids that appear in no subject-linkable place cannot be
+   derived and are documented as a limitation.
+7. **Step planner** — findings cite the freshest eligible fact's `file_id`;
+   INCOMPLETE remediation/verification steps always use `""` evidence per the
+   spec; COMPLETE cases emit evidence-cited verifications, ordered as in §6.4.
+
+## Known limitations
+
+- **Hidden rid mappings**: a few sample cases (`case_04/09/18/20/21/23/25/31/32`
+  style) reference account/analytics rid↔user pairs that no participant-visible
+  evidence links (verified by grep over the whole corpus, plus cross-table
+  joins on `user_id`, `email_hash`, `phone`). Those fields cannot be derived
+  without organizer-only truth; the pipeline falls back to nearest-activity
+  attribution for accounts and omits derivable-only-other resources.
+- **OCR**: PNG evidence is read via the `tesseract` binary and cached on disk
+  keyed by SHA-256 of the file (`code/evaluation/extract_cache/`). OCR is
+  approximate; most subject identifiers are corroborated by non-image sources.
+- **Order-score ceiling**: 17/32 sample cases match exactly. All residual
+  sample gaps are explained by the hidden-rid limitation above.
+

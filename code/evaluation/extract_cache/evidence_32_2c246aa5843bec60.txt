@@ -1,0 +1,27 @@
+Northstar Shop Vault Recovery Manager » Search archives, accounts or restore requests Production Help (VR
+Northstar Shop / Vault Recovery Manager | Recovery Manager
+[ overview Cust latf hi ety el o
+ustomer-platform archives ter port \ctions
+[ Recovery Manager Northstar Production - weekly snapshots
+— Archives  Recentrestores  Infrastructure health
+[J customer platforms
+[ Restore requests Servica health Storage growth Restore success Stored
+Healthy +12.4% 99.6% 1.35PB
+[J infrastructure - - - -
+[ Reports Archives Updated moments ago - 4 records backup_9287
+Archive ID Account Region Created size Encryption Tier Jocount srecdnessegmailcom
+1 backup_8201 bluepeakco@outiook com ap-southeast-1 26 Apr 02:00 1023 68 AES-256 Archive Path s3ilnorthstar-backups/customer-
+platform/weekly/segment-42-
+2| backup_9288 mille.logistics@company.com us-west-2 26 Apr 02:00 67168 AgS-256 Archive 20260426.tar:25¢
+Region eu-west-1
+5| backup_9287 areed1433@gmailcom euwest-1 26 Apr 02:00 84768 AgS-256 Archive
+Created 26 Apr 2026 02:00 UTC
+4] backup_9286 summit-retail@company.com us-east-1 26 Apr 02:00 o148 AES-256 Archive
+X pany. P Encryption AES-256
+Checksum Verified
+Last dril 29 Mar 2026
+Retentionend  26.Jul 2026
+Activity
+o 25h0r
+o 2ah0r
+o 22400

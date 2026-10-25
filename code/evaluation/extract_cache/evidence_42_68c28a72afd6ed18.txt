@@ -1,0 +1,29 @@
+Northstar Shop ;:;I‘:(':‘;' Reference » Search references, orders, support cases or finance records. Production Help (CR
+Northstar Shop / Customer Reference Registry / Customer references
+Home
+0 user 17 Retained reference Fiter | Export
+N Customer key - Account Platform - eu-west
+[J Customer references
+— Overview  Linked records  History
+[] orders
+] support Reference type Created Most recent update Owner team
+Customer key 11Jan 2024 08:42 UTC 10 Mar 2026 07:18 UTC Account Platform
+(] Finance ~ ~ - -
+[] Datamanagement overview Updated moments ago - 4records | | History
+[J Reports System Record reference Relationship Created (UTC) status o Mar 2026
+O 10 Mar 2026 Metadata reviewed
+1) Orders ORD-20263245 Linked to customer 1 Jan 2024 0845 Active . 22 Aug 2020 Finance link added
+2| support cs-s205 Linked to customer 14 Feb 2024 12:16 Active . 93 Jun 2024 Supportlink added
+14 Feb 2024 Support link added
+5| support cs-3378 Linked to customer 03 Jun 2024 09:27 Active .
+1 Jan 2024 Reference created
+4] Finance FIN-7742 Linked to customer 22 Aug 2024 15:03 Active .
+Activity
+© Reference created
+© Order link added
+0RD-20263245
+© supportlinks added
+cs-3245, C5-3378
+o Finance link added
+FiN-7702
+© Motadata reviewed

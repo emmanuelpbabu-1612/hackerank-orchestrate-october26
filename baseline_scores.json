@@ -1,0 +1,14 @@
+{
+  "cases": 32,
+  "deletion_status_accuracy": 1.0,
+  "exact_step_and_order_accuracy": 0.5312,
+  "phase_accuracy": 0.9534,
+  "operation_accuracy": 0.9016,
+  "system_id_accuracy": 0.9016,
+  "resource_id_accuracy": 0.829,
+  "state_accuracy": 0.9016,
+  "evidence_id_accuracy": 0.9171,
+  "sequence_order_accuracy": 0.5312,
+  "status_false_negative": 0,
+  "status_false_positive_complete": 0
+}
